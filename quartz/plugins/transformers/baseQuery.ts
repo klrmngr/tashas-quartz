@@ -16,7 +16,7 @@
 
 import { QuartzTransformerPlugin } from "../types"
 import { visit } from "unist-util-visit"
-import { parse as parseYaml } from "yaml"
+import yaml from "js-yaml"
 import path from "path"
 import fs from "fs"
 
@@ -65,7 +65,7 @@ function parseFm(content: string): Record<string, unknown> {
   const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!m) return {}
   try {
-    return (parseYaml(m[1]) as Record<string, unknown>) ?? {}
+    return (yaml.load(m[1], { schema: yaml.JSON_SCHEMA }) as Record<string, unknown>) ?? {}
   } catch {
     return {}
   }
@@ -110,16 +110,15 @@ function evalFilter(
   candidate: VaultFile,
   current: VaultFile,
   allByName: Map<string, VaultFile>,
-  formulas: Record<string, string>,
 ): boolean {
   if (typeof node === "string") {
-    return evalLeaf(node.trim(), candidate, current, allByName, formulas)
+    return evalLeaf(node.trim(), candidate, current, allByName)
   }
   if ("and" in node) {
-    return (node.and as FilterNode[]).every(n => evalFilter(n, candidate, current, allByName, formulas))
+    return (node.and as FilterNode[]).every(n => evalFilter(n, candidate, current, allByName))
   }
   if ("or" in node) {
-    return (node.or as FilterNode[]).some(n => evalFilter(n, candidate, current, allByName, formulas))
+    return (node.or as FilterNode[]).some(n => evalFilter(n, candidate, current, allByName))
   }
   return true
 }
@@ -129,7 +128,6 @@ function evalLeaf(
   f: VaultFile,
   cur: VaultFile,
   allByName: Map<string, VaultFile>,
-  formulas: Record<string, string>,
 ): boolean {
   // file.inFolder("path")
   const inFolder = expr.match(/^file\.inFolder\("([^"]+)"\)$/)
@@ -226,7 +224,7 @@ export const BaseQuery: QuartzTransformerPlugin = () => {
             links: new Set<string>(),
           }
 
-          visit(tree, "element", (node: any, index: number | null, parent: any) => {
+          visit(tree, "element", (node: any, index: number | undefined, parent: any) => {
             if (
               node.tagName !== "pre" ||
               node.children?.[0]?.tagName !== "code" ||
@@ -237,13 +235,12 @@ export const BaseQuery: QuartzTransformerPlugin = () => {
             const raw: string = node.children[0].children?.[0]?.value ?? ""
             let query: any
             try {
-              query = parseYaml(raw)
+              query = yaml.load(raw, { schema: yaml.JSON_SCHEMA })
             } catch {
               return
             }
 
             const views: any[] = query?.views ?? []
-            const formulas: Record<string, string> = query?.formulas ?? {}
 
             if (views.length === 0) return
 
@@ -252,7 +249,7 @@ export const BaseQuery: QuartzTransformerPlugin = () => {
               const filterRoot: FilterNode = view.filters ?? { and: [] }
 
               let results = allFiles.filter(f =>
-                evalFilter(filterRoot, f, currentFile, byName!, formulas),
+                evalFilter(filterRoot, f, currentFile, byName!),
               )
 
               const order: string[] = view.order ?? []
@@ -268,7 +265,7 @@ export const BaseQuery: QuartzTransformerPlugin = () => {
                 ? tables[0]
                 : hEl("div", { className: ["base-query-multi"] }, tables)
 
-            if (parent && index !== null) {
+            if (parent && index !== undefined) {
               parent.children.splice(index, 1, replacement)
             }
           })
