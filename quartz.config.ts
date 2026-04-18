@@ -14,7 +14,7 @@ const config: QuartzConfig = {
     enablePopovers: true,
     analytics: null,
     locale: "en-US",
-    baseUrl: "quartz.jzhao.xyz",
+    baseUrl: "klrmngr.github.io/tashas-quartz",
     ignorePatterns: ["private", "templates", ".obsidian", "Assets/Templates"],
     defaultDateType: "modified",
     theme: {
