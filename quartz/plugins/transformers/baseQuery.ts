@@ -171,8 +171,28 @@ function hEl(tag: string, props: Record<string, unknown>, children: unknown[]) {
   return { type: "element" as const, tagName: tag, properties: props, children }
 }
 
+function fileHref(r: VaultFile): string {
+  return "/" + r.vaultPath.replace(/\.md$/, "").split("/").map(encodeURIComponent).join("/")
+}
+
 function buildTable(view: Record<string, unknown>, rows: VaultFile[]): unknown {
   const colName = (view.name as string | undefined) ?? "Name"
+  const isCards = view.type === "cards"
+
+  if (isCards) {
+    const items =
+      rows.length === 0
+        ? [hEl("li", { className: ["base-card-empty"] }, [hText("—")])]
+        : rows.map(r =>
+            hEl("li", { className: ["base-card"] }, [
+              hEl("a", { href: fileHref(r) }, [hText(r.name)]),
+            ]),
+          )
+    return hEl("div", { className: ["base-query", "base-cards"] }, [
+      hEl("p", { className: ["base-view-name"] }, [hText(colName)]),
+      hEl("ul", { className: ["base-card-list"] }, items),
+    ])
+  }
 
   const headerRow = hEl("tr", {}, [hEl("th", {}, [hText(colName)])])
   const thead = hEl("thead", {}, [headerRow])
@@ -180,10 +200,9 @@ function buildTable(view: Record<string, unknown>, rows: VaultFile[]): unknown {
   const bodyRows =
     rows.length === 0
       ? [hEl("tr", {}, [hEl("td", { className: ["base-empty"] }, [hText("—")])])]
-      : rows.map(r => {
-          const href = "/" + r.vaultPath.replace(/\.md$/, "").split("/").map(encodeURIComponent).join("/")
-          return hEl("tr", {}, [hEl("td", {}, [hEl("a", { href }, [hText(r.name)])])])
-        })
+      : rows.map(r =>
+          hEl("tr", {}, [hEl("td", {}, [hEl("a", { href: fileHref(r) }, [hText(r.name)])])]),
+        )
 
   const tbody = hEl("tbody", {}, bodyRows)
   const table = hEl("table", { className: ["base-query-table"] }, [thead, tbody])

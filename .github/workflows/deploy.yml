@@ -27,6 +27,10 @@ jobs:
       - name: Clone vault into content/
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.VAULT_TOKEN }}@github.com/klrmngr/tashas-notes-of-everything.git content
+          # Quartz needs lowercase index.md on Linux for the root page
+          if [ -f content/INDEX.md ] && [ ! -f content/index.md ]; then
+            cp content/INDEX.md content/index.md
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4

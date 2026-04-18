@@ -15,7 +15,7 @@ const config: QuartzConfig = {
     analytics: null,
     locale: "en-US",
     baseUrl: "klrmngr.github.io/tashas-quartz",
-    ignorePatterns: ["private", "templates", ".obsidian", "Assets/Templates"],
+    ignorePatterns: ["private", "templates", ".obsidian", "Assets/Templates", "INDEX.md"],
     defaultDateType: "modified",
     theme: {
       fontOrigin: "googleFonts",
